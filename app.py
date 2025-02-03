@@ -186,16 +186,18 @@ class TrackableGroupChatManager(GroupChatManager):
         def a_receive(self, message, sender, request_reply = None, silent = False):
             if len(st.session_state.messages) >=  max_rounds:
                 for message in st.session_state.messages:
-                    with st.chat_message(message["role"]):
-                        st.markdown(message["content"])
-                    with st.chat_message("System"):
-                        st.markdown("The maximum rounds have been reached before a solution was found. Please try again or increase the maximum rounds.")
+                    if message.get("role") == "Consultant" or message.get("role") == "Checker":
+                        with st.chat_message(message["role"]):
+                            st.markdown(message["content"])
+                        with st.chat_message("System"):
+                            st.markdown("The maximum rounds have been reached before a solution was found. Please try again or increase the maximum rounds.")
             elif sender.name == 'Consultant' or sender.name == 'Checker':
                 if st.session_state.latest_update_time < time.time() - 1:
                     st.session_state.latest_update_time=time.time()
                     for message in st.session_state.messages:
-                        with st.chat_message(message["role"]):
-                            st.markdown(message["content"])
+                        if message.get("role") in ["Consultant", "user"]:
+                            with st.chat_message(message["role"]):
+                                st.markdown(message["content"])
                     if "terminatex" in st.session_state.messages[-1]["content"].lower():
                         if st.session_state.chat_id == 2:
                             # get json part of last message in st.sessionstate.messages
@@ -206,9 +208,10 @@ class TrackableGroupChatManager(GroupChatManager):
                         print("Terminating chat")
                         if st.session_state.chat_id==2:
                             with chat_container:
-                                for message in st.session_state.messages:
-                                    with st.chat_message(message["role"]):
-                                        st.markdown(message["content"])
+                                if message.get("role") in ["Consultant", "user"]:
+                                    for message in st.session_state.messages:
+                                        with st.chat_message(message["role"]):
+                                            st.markdown(message["content"])
                             st.rerun()
             return super().a_receive(message, sender, request_reply, silent)
 
@@ -369,6 +372,7 @@ with st.container():
             st.session_state.in_progress = True
             with chat_container:
                 for message in st.session_state.messages:
+                    if message.get("role") in ["Consultant", "Checker", "user"]:
                         with st.chat_message(message["role"]):
                             st.markdown(message["content"])
                 if st.session_state.chat_id == 2:
@@ -383,9 +387,16 @@ with st.container():
             st.session_state.loop.run_until_complete(initiate_chat())
         if st.session_state.chat_id >= 3:
             for message in st.session_state.messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
+                if message.get("role") in ["Consultant","Checker", "user"]:
+                    if message.get("role") == "Checker" and not st.session_state.output_json:
+                        with st.chat_message(message["role"]):
+                            st.markdown(message["content"])
+                    elif message.get("role") != "Checker":
+                        with st.chat_message(message["role"]):
+                            st.markdown(message["content"])
             if st.session_state.output_json:
+                with st.chat_message("System"):
+                    st.markdown("The AI team has finished working on the problem. You can download the output below.")
                 print(st.session_state.output_json)
                 excel_file = json_to_excel(st.session_state.output_json)
                 # Create download button
