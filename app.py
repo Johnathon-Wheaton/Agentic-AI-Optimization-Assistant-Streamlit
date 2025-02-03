@@ -75,7 +75,9 @@ On final confirmation, provide:
 4. Include 'TERMINATEX' to end conversation"""
 
 CODER_SYSTEM_MSG = """You are a coder. Construct the described optimization model in python using the json data as inputs.
-You do not run the code. Your only job is to write code. Do not do anything else. If the problem is a linear programming problem, use the PuLP library to solve it.
+You do not run the code. Your only job is to write code. Do not do anything else.
+
+If the problem is a linear programming problem then consider using the PuLP library to solve it and if the problem is VRP or scheduling then consider using ortools, though neither of these are prescriptive recommendation.
 
 Requirements:
 - For package installation, provide Windows shell commands
@@ -171,7 +173,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.write("""# AutoGen Chat Agents""")
-
+with open("instructions.md", "r") as f:
+    instructions = f.read()
+with st.expander("📚 Instructions & Examples", expanded=False):
+    st.markdown(instructions)
 chat_container = st.container()
 
 selected_model = None
@@ -179,7 +184,7 @@ selected_key = None
 with st.sidebar:
     st.header("OpenAI Configuration")
     max_rounds = st.number_input("Maximum Rounds", min_value=0, max_value=100, value = 40)
-    selected_model = st.selectbox("Model", ['gpt-3.5-turbo', 'gpt-4o-mini'], index=1)
+    selected_model = st.selectbox("Model", ['gpt-o1','gpt-o3-mini','gpt-4o', 'gpt-4o-mini'], index=1)
     selected_key = st.text_input("API Key", type="password")
 
 class TrackableGroupChatManager(GroupChatManager):
